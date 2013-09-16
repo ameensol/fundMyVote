@@ -1,0 +1,33 @@
+{
+  "name": "fundMyVote",
+  "version": "0.0.0",
+  "description": "campaign finance aggregates across specific legislature",
+  "keywords": [
+  ],
+  "author": "Ameen Soleimani (https://github.com/ameensol)",
+  "license": "MIT",
+  "dependencies": {
+    "querystring": "0.2.x",
+    "request": "2.25.x",
+    "async": "0.2.x",
+    "sunlight-congress-api": "x",
+    "openstates": "0.0.1",
+  },
+  "devDependencies": {
+    "nconf": "~0.6.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ameensol/fundMyVote"
+  },
+  "main": "fundMyVote.js",
+  "engines": {
+    "node": "~0.10"
+  },
+  "bugs": {
+    "url": "https://github.com/ameensol/fundMyVote",
+    "email": "ameen.sol@gmail.com"
+  },
+  "license": "MIT",
+  "readmeFilename": "README.md"
+}
