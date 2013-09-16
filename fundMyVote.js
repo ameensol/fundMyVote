@@ -67,6 +67,11 @@ billObj.prototype.aggVoteMoney = function(question) {
       self.contrib = self.sortResults(self.orgContrib);
     }
 
+    // TODO optional view mode, put this stuff in its own function
+    // TODO This spot needs to pass back the data objects - and its probably going to d3.
+    /*      Format this appropriately, and figure out the best way to pass a callback through this whole system,
+            be it appending it to the object... actually that is the best way... create this.callback property
+
     console.log('****************QUERY COMPLETE!*******************');
     console.log(question);
     console.log('Year: ' + self.cycles);
