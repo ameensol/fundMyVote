@@ -17,20 +17,49 @@ var openstates = new OpenStates(apiKey);
 congress.init(apiKey);
 
 // TODO find better data structure for Ind and Org selections
+// * accept a variable, contribType - that can be either i/o/b - and return the data accordingly
+// * problem - so far the billObj is only designed for 1 lookup at a time - hits/misses is for 1 lookup
+// * start just using a variable to act as a switch between the two modes - industry and organization
+// * but, I can use the same object for both now, because they will never be at the same time
+// * hits/misses needs to exist on the indContrib and orgContrib objects, not on the actual lookup
+// * if I'm going to be putting more vars on the contrib objects, I could stand to make a contructor
+// * okay, I have hits and misses on the Contrib object...
+// * FUCK - Its only going to be for one at a time.
 
+// TODO validate all inputs
+
+/*
+Query
+  Source
+  Cycles
+  Type
+  Print
+  Bill
+    Id
+    Type
+    Chamber
+    ...
+    Votes
+
+    Amendments
+      Question
+      Votes
+
+
+*/
 // Object to store bill data and methods
-function billObj(name, cycles, type) {
+function billObj(name, cycles, type, print) {
   if(!(this instanceof billObj)) return new billObj(name, cycles);
   this.name = name;
   this.cycles = cycles || 2012;
-  this.type = type || 'ind'; 
-  this.indContrib = {};
-  this.orgContrib = {};
-  this.hits = 0;
+  this.type = type;
+  this.print = print;
+  this.contrib = {};
   this.misses = 0;
-  this.pols =  [];
+  this.hits = 0;
   return this;
 }
+
 
 // Get the campaign finance info for all legislators
 billObj.prototype.aggVoteMoney = function(question) {
@@ -48,7 +77,7 @@ billObj.prototype.aggVoteMoney = function(question) {
         return next();
       }
 
-      self.getIndContrib(pol, function(err) {
+      var getContribCb = function(err, json) {
         if (err) {
           console.log(err);
           self.misses += 1;
@@ -57,49 +86,56 @@ billObj.prototype.aggVoteMoney = function(question) {
           self.hits += 1;
           return next();
         }
-      });
+      };
+
+      if(self.type === 'i') self.getIndContrib(pol, getContribCb);
+      if(self.type === 'o') self.getOrgContrib(pol, getContribCb);
 
     });
   }, function() {
-    if (self.type == 'ind') {
-      self.contrib = self.sortResults(self.indContrib);
-    } else if (self.type == 'org') {
-      self.contrib = self.sortResults(self.orgContrib);
-    }
 
     // TODO optional view mode, put this stuff in its own function
+    // * the optional view mode should also take into account the contrib type
     // TODO This spot needs to pass back the data objects - and its probably going to d3.
     /*      Format this appropriately, and figure out the best way to pass a callback through this whole system,
-            be it appending it to the object... actually that is the best way... create this.callback property
+            be it appending it to the object... actually that is the best way... create this.callback property */
+    // Okay, I'm not going to be able to do everything now - I don't know the best way to format. SO keep the list
+    // * for the output, but also return the avg. 
 
-    console.log('****************QUERY COMPLETE!*******************');
-    console.log(question);
-    console.log('Year: ' + self.cycles);
-    console.log('\nHits: ' + self.hits + ' | Misses: '+ self.misses + '\n');
+    if(self.print) {
+      self.li = self.sortResults();
+      self.logResults();
+    }
 
-    // only see the first 5 donors
-    self.contrib = self.contrib.splice(0, 5);
-
-    /*
-    console.log('**************' + self.name + ' Votes Money Sum******************');
-    console.dir(self.contrib);
-    */
-
-    self.contrib.forEach(function (el) {
-      el[1] = el[1]/self.hits;
-    });
-
-    // indcontrib is now a json object
-    Object.keys(self.indContrib).forEach(function(el) {
-      self.indContrib[el] = self.indContrib[el]/self.hits;
-    });
-
-
-    console.log('**************' + self.name + ' Votes Money Avg******************');
-    console.dir(self.contrib);
-    // console.log(self.indContrib);
+    // callback(findAvg(contrib));
   });
 };
+
+billObj.prototype.logResults = function() { 
+  console.log('****************QUERY COMPLETE!*******************');
+  console.log(question);
+  console.log('Year: ' + self.cycles);
+  console.log('\nHits: ' + self.hits + ' | Misses: '+ self.misses + '\n');
+
+  /*
+  console.log('**************' + self.name + ' Votes Money Sum******************');
+  console.dir(contrib);
+  */
+
+  // only see the first 5 donors
+  li = li.splice(0, 5);
+
+  console.log('**************' + self.name + ' Votes Money Avg******************');
+  console.dir(li);
+
+  function findAvg() {
+    Object.keys(self.contrib).forEach(function(el) {
+      self.contrib[el] = self.contrib[el]/self.hits;
+    });
+    return self.contrib;
+  }
+};
+
 
 // TODO reconcile the id lookup inputs from both
 // TODO Figure out how to reconcile the politicians name in for the error messages
@@ -107,8 +143,8 @@ billObj.prototype.aggVoteMoney = function(question) {
 // lookup the transparency id from the bioguide ID, store as pol.id
 billObj.prototype.getId = function(pol, cb) {
   influence.entityIdLookup(null, null, pol.bioguide_id, function(err, json) {
-    if (err) return cb(new Error('ID lookup ERROR for ' + pol.first_name + ' ' + pol.last_name + ' | err: ' + err.message));
-    if (typeof json[0] == 'undefined') return cb(new Error('ID lookup failed for ' + pol.first_name + ' ' + pol.last_name));
+    if (err) return cb(new Error('ID lookup ERROR for ' + pol.full_name + ' | err: ' + err.message));
+    if (typeof json[0] == 'undefined') return cb(new Error('ID lookup failed for ' + pol.full_name));
     pol.id = json[0].id;
     return cb(null, pol);
   });
@@ -121,35 +157,66 @@ billObj.prototype.getId = function(pol, cb) {
 // Get the campaign contributions by industry
 billObj.prototype.getIndContrib = function(pol, cb) {
   var self = this;
-
   influence.topIndustries(pol.id, self.cycles, null, function(err, json) {
     if (err) {
-      return cb(new Error('Campaign Finance lookup ERROR for ' + pol.first_name + ' ' + pol.last_name + ' | err: ' + err.message));
+      return cb(new Error('Campaign Finance lookup ERROR for ' + pol.full_name + ' | err: ' + err.message));
     }
     if (json.length > 0) {
-
       // increment the contrib object with these results
-      json.forEach(function(el, index, array) {
-        if (el.name in self.indContrib) { 
-          self.indContrib[el.name] += parseInt(el.amount);
+      json.forEach(function(el) {
+        if (el.name in self.contrib) { 
+          self.contrib[el.name] += parseInt(el.amount);
         } else {
-          self.indContrib[el.name] = parseInt(el.amount);
+          self.contrib[el.name] = parseInt(el.amount);
         }
       });
       return cb(null);
     } else {
-      return cb(new Error('Campaign Finance lookup failed for ' + pol.first_name + ' ' + pol.last_name));
+      return cb(new Error('Campaign Finance lookup failed for ' + pol.full_name));
     }
   });
 };
 
+// Get the campaign contributions by organization
+billObj.prototype.getOrgContrib = function(pol, cb) {
+  var self = this;
+  // console.dir(pol);
+  var foundData = false;
+  async.forEach(self.cycles, function(el, next) {
+    influence.topContributors(pol.id, el, null, function(err, json) {
+      if (err) {
+        return next(new Error('Campaign Finance lookup ERROR for ' + pol.full_name + ' | err: ' + err.message));
+      }
+      if (json.length > 0) {
+        foundData = true;
+        // increment the contrib object with these results
+        json.forEach(function(el, index, array) {
+          if (el.name in self.orgContrib) { 
+            self.contrib[el.name] += parseInt(el.total_amount);
+          } else {
+            self.contrib[el.name] = parseInt(el.total_amount);
+          }
+        });
+      }
+      return next(null);
+    });
+  }, function(err) {
+    if (err) return cb(err);
+    if (!foundData) return cb(new Error('Campaign Finance lookup failed for ' + pol.full_name + ' - ' + pol.id));
+    return cb(null);
+  });
+};
+
 // sort campaign finance results from largest to smallest
-billObj.prototype.sortResults = function(contrib) {
+billObj.prototype.sortResults = function() {
   var self = this;
   var sortable = [];
-  for (var contributor in contrib)
-    sortable.push([contributor, contrib[contributor]]);
+  for (var contributor in self.contrib)
+    sortable.push([contributor, self.contrib[contributor]]);
   sortable.sort(function(a, b) {return b[1] - a[1]});
+  sortable.forEach(function (el) {
+    el[1] = el[1]/self.hits;
+  });
   return sortable;
 };
 
@@ -162,7 +229,7 @@ billObj.prototype.sortResults = function(contrib) {
 var votesSuccess = function(data) {
   var votes = data.results;
   var amendments = votes.filter(function(el) {
-    return el.roll_type.indexOf('Amendment') > 0
+    return el.roll_type.indexOf('Amendment') > 0;
   });
 
   amendments.forEach(function(el) {
@@ -186,6 +253,7 @@ var rollSuccess = function(data) {
     } else if (voters[el].vote == "Nay") {
       noVotes.push(voters[el].voter);
     }
+
   });
 
   // TODO Combine the two data aggregation objects into one, or ... yea ... 
@@ -195,8 +263,8 @@ var rollSuccess = function(data) {
    */
 
   // init data aggregation objects
-  var yesData = new billObj('Yes', [2010, 2012]);
-  var noData = new billObj('No', [2010, 2012]);
+  var yesData = new billObj('Yes', [2010, 2012], 'i', true);
+  var noData = new billObj('No', [2010, 2012], 'i', true);
 
   yesData.votes = yesVotes;
   noData.votes = noVotes;
@@ -210,22 +278,24 @@ var rollSuccess = function(data) {
 
 // get the votes on the bill, expects only 1 bill returned
 function getVotes(bill_id) {
-  api.votes() 
+  congress.votes() 
     .filter("bill_id", bill_id)
-    .fields("voters", "question")
     .call(votesSuccess)
 }
 
 // TODO getRoll may be redundant. Can I filter by voters initially, so I don't have to do 2 api calls?
-/* 
+
 function getRoll(roll_id) {
-  api.votes()
+  congress.votes()
     .filter("bill_id", bill_id)
+    .filter("roll_id", roll_id)
+    .fields("voters", "question")
     .call(rollSuccess)
-}*/
+}
 
 // TODO abstract initializing, and make it work for either bill type - accept a formatter variable and the id.
 
 var bill_id = "s649-113";
 
 getVotes(bill_id);
+

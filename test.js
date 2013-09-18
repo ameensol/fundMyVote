@@ -103,7 +103,6 @@ billObj.prototype.aggVoteMoney = function() {
       el[1] = el[1]/self.hits;
     });
 
-
     console.log('**************' + self.name + ' Votes Money Avg******************');
     console.dir(self.contrib);
   });
@@ -124,7 +123,7 @@ billObj.prototype.getId = function(pol, cb) {
 // Get the campaign contributions by industry
 billObj.prototype.getIndContrib = function(pol, cb) {
   var self = this;
-  // console.dir(pol);
+  console.dir(pol);
   influence.topIndustries(pol.id, self.cycles, null, function(err, json) {
     if (err) {
       return cb(new Error('Campaign Finance lookup ERROR for ' + pol.full_name + ' | err: ' + err.message));
@@ -174,7 +173,6 @@ billObj.prototype.getOrgContrib = function(pol, cycles, cb) {
     if (!foundData) return cb(new Error('Campaign Finance lookup failed for ' + pol.full_name + ' - ' + pol.id));
     return cb(null);
   });
-  
 };
 
 // sort campaign finance results from largest to smallest

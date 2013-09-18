@@ -1,5 +1,4 @@
 var async = require('async');
-var d3 = require("d3");
 var api = require("sunlight-congress-api");
 var Influence = require('./influence');
 
@@ -177,9 +176,6 @@ var rollSuccess = function(data) {
   yesData.aggVoteMoney(question);
   noData.aggVoteMoney(question);
 }
-
-// TODO update the existing Congress API client with the ability to pass a callback to the callback...
-// TODO ... or something like that.
 
 // get the votes on the bill, expects only 1 bill returned
 function getVotes(bill_id) {
