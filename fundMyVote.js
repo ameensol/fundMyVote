@@ -28,25 +28,7 @@ congress.init(apiKey);
 
 // TODO validate all inputs
 
-/*
-Query
-  Source
-  Cycles
-  Type
-  Print
-  Bill
-    Id
-    Type
-    Chamber
-    ...
-    Votes
 
-    Amendments
-      Question
-      Votes
-
-
-*/
 // Object to store bill data and methods
 function billObj(name, cycles, type, print) {
   if(!(this instanceof billObj)) return new billObj(name, cycles);
@@ -64,11 +46,13 @@ function billObj(name, cycles, type, print) {
 // Get the campaign finance info for all legislators
 billObj.prototype.aggVoteMoney = function(question) {
   var self = this;
+  self.question = question;
   async.forEach(this.votes, function(el, next) {
 
      // TODO reconcile pol data structure from both sources
 
     var pol = el;
+    if (!pol.full_name) pol.full_name = pol.first_name + ' ' + pol.last_name;
 
     self.getId(pol, function(err, json) {
       if (err) {
@@ -112,8 +96,10 @@ billObj.prototype.aggVoteMoney = function(question) {
 };
 
 billObj.prototype.logResults = function() { 
+  var self = this;
+
   console.log('****************QUERY COMPLETE!*******************');
-  console.log(question);
+  console.log(self.question);
   console.log('Year: ' + self.cycles);
   console.log('\nHits: ' + self.hits + ' | Misses: '+ self.misses + '\n');
 
@@ -123,10 +109,10 @@ billObj.prototype.logResults = function() {
   */
 
   // only see the first 5 donors
-  li = li.splice(0, 5);
+  self.li = self.li.splice(0, 5);
 
   console.log('**************' + self.name + ' Votes Money Avg******************');
-  console.dir(li);
+  console.dir(self.li);
 
   function findAvg() {
     Object.keys(self.contrib).forEach(function(el) {
@@ -253,7 +239,6 @@ var rollSuccess = function(data) {
     } else if (voters[el].vote == "Nay") {
       noVotes.push(voters[el].voter);
     }
-
   });
 
   // TODO Combine the two data aggregation objects into one, or ... yea ... 

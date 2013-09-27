@@ -7,7 +7,6 @@ var fs = require('fs');
 var Influence = require('./influence');
 var OpenStates = require('openstates');
 
-var nameVariants = require(__dirname + '/resources/nameVariants');
 
 // Load apiKey from config.json - you can replace this code and manually set your API key here
 var nconf = require('nconf');
@@ -123,7 +122,7 @@ billObj.prototype.getId = function(pol, cb) {
 // Get the campaign contributions by industry
 billObj.prototype.getIndContrib = function(pol, cb) {
   var self = this;
-  console.dir(pol);
+  // console.dir(pol);
   influence.topIndustries(pol.id, self.cycles, null, function(err, json) {
     if (err) {
       return cb(new Error('Campaign Finance lookup ERROR for ' + pol.full_name + ' | err: ' + err.message));
