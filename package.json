@@ -1,7 +1,7 @@
 {
   "name": "fundMyVote",
   "version": "0.0.0",
-  "description": "campaign finance aggregates across specific legislature",
+  "description": "campaign finance aggregates across state legislature",
   "keywords": [
   ],
   "author": "Ameen Soleimani (https://github.com/ameensol)",

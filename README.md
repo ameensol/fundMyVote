@@ -1,4 +1,4 @@
 fundMyVote
 ==========
 
-campaign finance aggregates across specific legislature
+campaign finance aggregates across state legislature
