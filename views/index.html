@@ -67,8 +67,9 @@
       visualize(dataset);
 
       function visualize(dataset) {
-        var w = 600,
+        var w = 800,
             h = 400;
+            padding = 30;
 
         var colors = ["orange", "green"]
         var xSpace = 190;
@@ -93,12 +94,23 @@
             // use larger of 2 yes and no values
             if (d[1].no > d[1].yes) return d[1].no;
             return d[1].yes; })])
-          .rangeRound([0, w/2]);
+          .rangeRound([padding, w/2 - padding * 2]);
 
 
         var yScale = d3.scale.ordinal()
           .domain(d3.range(truncData.length))
-          .rangeRoundBands([0, h], 0.20);
+          .rangeRoundBands([padding, h - padding], 0.20);
+
+        var formatAsPercentage = d3.format(".1%");
+
+        var xAxis = d3.svg.axis()
+          .scale(xScale)
+          .orient("bottom")
+          .ticks(5);
+
+        var yAxis = d3.svg.axis()
+          .scale(yScale)
+          .orient("left")
                      
         var sets = svg.selectAll(".set")
           .data(truncData)
@@ -170,6 +182,48 @@
             return "$" + Math.round(d[1].no).toLocaleString();
           })
           .attr("font-size", "12px");
+
+        svg.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(" + (xSpace - padding) + "," + (h - padding) + ")")
+          .call(xAxis);
+
+        svg.append("g")
+          .attr("class", "axis yAxis")
+          .attr("transform", "translate(" + (xSpace) + ",0)")
+          .call(yAxis);
+
+        svg.append("text")
+          .attr("x", (w / 2))             
+          .attr("y", padding)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px") 
+          .style("text-decoration", "underline")  
+          .text("Average Campaign Contributions");
+
+        svg.append("rect")
+          .attr("x", w * .75)
+          .attr("y", padding)
+          .attr("height", 20)
+          .attr("width", 20)
+          .attr("fill", colors[1]);
+
+        svg.append("rect")
+          .attr("x", w * .75)
+          .attr("y", padding * 2)
+          .attr("height", 20)
+          .attr("width", 20)
+          .attr("fill", colors[0]);
+
+        svg.append("text")
+          .attr("x", w * .75 + 30)
+          .attr("y", padding + 12)
+          .text("Nay Votes");
+
+        svg.append("text")
+          .attr("x", w * .75 + 30)
+          .attr("y", padding * 2 + 12)
+          .text("Yea Votes");
 
         }
 
