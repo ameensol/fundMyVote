@@ -94,7 +94,7 @@
             // use larger of 2 yes and no values
             if (d[1].no > d[1].yes) return d[1].no;
             return d[1].yes; })])
-          .rangeRound([padding, w/2 - padding * 2]);
+          .rangeRound([0, w/2 - padding * 2]);
 
 
         var yScale = d3.scale.ordinal()
@@ -185,7 +185,7 @@
 
         svg.append("g")
           .attr("class", "axis")
-          .attr("transform", "translate(" + (xSpace - padding) + "," + (h - padding) + ")")
+          .attr("transform", "translate(" + (xSpace) + "," + (h - padding) + ")")
           .call(xAxis);
 
         svg.append("g")
