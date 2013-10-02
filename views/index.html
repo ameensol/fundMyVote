@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <link href="css/style.css" rel="stylesheet">
+    <script src="js/d3.v3.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+    <script src="js/jquery-2.0.3.min.map"></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="col-md-6 pull-left">
+        <h1>Fund My Vote</h1>
+        <h3>Find out how campaign finance correlates with votes in state congress</h3>
+        <form method="POST" id="mainForm" role="form">
+          <div class="form-group">
+            <label for="state">State abbreviation in capital letters ~ 'NC'</label>
+            <input type="text" class="form-control" placeholder="State" id="state" name="state" value="NC" required>
+          </div>
+          <div class="form-group">
+            <label for="year">Year as 4 digits ~ 2013</label>
+            <input type="text" class="form-control"placeholder="Year" id="year" name="year" value="2013" required>
+          </div>
+          <div class="form-group">
+            <label for="bill_id">Bill ID as upper/lower house and number, separated by space ~ HB 589</label>
+            <input type="text" class="form-control"placeholder="Bill ID" id="bill_id" name="bill_id" value="HB 589" required>
+          </div>
+          <div class="form-group">
+            <label for="cycles">The cycles of congress to collect campaign contributions from, in a list format ~ [2010, 2012]</label>
+            <input type="text" class="form-control"placeholder="Cycles" id="cycles" name="cycles" value="[2010, 2012]" required>
+          </div>
+          <div class="form-group">
+            <label for="type">Contributions by industry ~ 'i' or organization ~ 'o'</label>
+            <input type="text" class="form-control"placeholder="Type" id="type" name="type" value="i" required>
+          </div>
+          <div class="form-group">
+            <label for="print">Optionally print the data output to the console ~ 'true' / 'false'</label>
+            <input type="text" class="form-control"placeholder="Print" id="print" name="print" value="false" required>
+          </div>
+          <button type="submit" class="btn btn-success">Success</button>
+        </form>
+      </div>
+      <div class="col-md-6 pull-right">
+        <div id="chart">
+          <div class="spacer"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var print = {{{print}}};
+      var dataset = {{{json}}};
+
+      if (print) console.log(json);
+        
+      visualize(dataset);
+
+      function visualize(dataset) {
+        var w = 600,
+            h = 400;
+
+        var colors = ["orange", "green"]
+        var xSpace = 190;
+        var xMargin = 0;
+        var yMargin = 200;
+
+        var svg = d3.select("#chart")
+          .append("svg")
+          .attr("height", h)
+          .attr("width", w);
+
+        // sort dataset from highest total to least
+        dataset.sort(function(a, b) {
+          if (a[1].yes + a[1].no > b[1].yes + b[1].no) return -1;
+          return 1;
+        })
+
+        truncData = dataset.slice(0, 10);
+
+        var xScale = d3.scale.linear()
+          .domain([0, d3.max(truncData, function(d) {
+            // use larger of 2 yes and no values
+            if (d[1].no > d[1].yes) return d[1].no;
+            return d[1].yes; })])
+          .rangeRound([0, w/2]);
+
+
+        var yScale = d3.scale.ordinal()
+          .domain(d3.range(truncData.length))
+          .rangeRoundBands([0, h], 0.20);
+                     
+        var sets = svg.selectAll(".set")
+          .data(truncData)
+          .enter()
+          .append("g")
+          .attr("class", "set")
+          .attr("transform", function(d, i) {
+            return "translate(0," + yScale(i) + ")"
+          })
+
+        sets.append("rect")
+          .attr("class", "yes")
+          .attr("width", function(d) {
+            return xScale(d[1].yes)
+          })
+          .attr("y", yScale.rangeBand()/2)
+          .attr("x", xSpace + xMargin)
+          .attr("height", yScale.rangeBand()/2)
+          .attr("rx", "4")
+          .attr("ry", "20")
+          .attr("fill", colors[0])
+
+        sets.append("rect")
+          .attr("class", "no")
+          .attr("width", function(d) {
+            return xScale(d[1].no)
+          })
+          .attr("x", xSpace + xMargin)
+          .attr("height", yScale.rangeBand()/2)
+          .attr("rx", "4")
+          .attr("ry", "20")
+          .attr("fill", colors[1])
+
+        svg.selectAll("text")
+          .data(truncData)
+          .enter()
+          .append("text")
+          .text(function(d) { return d[0]; })
+          .attr("x", xMargin)
+          .attr("y", function(d, i) {
+            return yScale(i) + 24;
+          })
+          .attr("font-family", "sans-serif")
+          .attr("font-size", "12px")
+          .attr("fill", "black")
+
+        sets.append("text")
+          .attr("height", yScale.rangeBand()/2)
+          .attr("x", function(d) {
+            return xScale(d[1].yes) + xSpace + 4 + xMargin;
+          })
+          .attr("y", function(d, i) {
+            return yScale.rangeBand() * 0.9;
+          })
+          .text(function(d) {
+            return "$" + Math.round(d[1].yes).toLocaleString();
+          })
+          .attr("font-size", "12px");
+
+        sets.append("text")
+          .attr("height", yScale.rangeBand()/2)
+          .attr("x", function(d) {
+            return xScale(d[1].no) + xSpace + 4 + xMargin;
+          })
+          .attr("y", function(d, i) {
+            return yScale.rangeBand() * 0.4;
+          })
+          .text(function(d) {
+            return "$" + Math.round(d[1].no).toLocaleString();
+          })
+          .attr("font-size", "12px");
+
+        }
+
+    </script>
+
+  </body>
+
+</html>
