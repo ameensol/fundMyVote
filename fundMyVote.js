@@ -22,7 +22,7 @@ var Bill = module.exports = function (state, year, bill_id, cycles, type, print)
   this.bill_id = bill_id;
   this.cycles = cycles || 2012;
   this.type = type;
-  this.print = print;
+  this.print = print || false;
   this.contrib = {};
   this.misses = 0;
   this.hits = 0;
@@ -114,12 +114,11 @@ Bill.prototype.logResults = function() {
   var self = this;
 
   console.log('****************QUERY COMPLETE!*******************');
-  console.log(self.question);
   console.log('Year: ' + self.cycles);
   console.log('\nHits: ' + self.hits + ' | Misses: '+ self.misses + '\n');
   console.log('************** Votes Money Avg******************');
 
-  console.dir(JSON.stringify(self.toArray()));
+  // console.dir(JSON.stringify(self.toArray(self.findAvg(self.contrib))));
 
 };
 
@@ -129,10 +128,11 @@ Bill.prototype.findAvg = function(contrib) {
     contrib[el].yes = Math.round(contrib[el].yes/self.yesHits * 100) / 100; 
     contrib[el].no = Math.round(contrib[el].no/self.noHits * 100) / 100;
   });
-  return self.contrib;
+  return contrib;
 };
 
 Bill.prototype.toArray = function(contrib) {
+  console.log(contrib);
   var array = [];
   Object.keys(contrib).forEach(function(el) {
     array.push([el, contrib[el]]);
@@ -226,7 +226,7 @@ Bill.prototype.getOrgContrib = function(pol, cb) {
     return cb(null);
   });
 };
-
+/*
 var state = 'NC';
 var year = '2013';
 var bill_id = 'HB 589';
@@ -243,3 +243,4 @@ bill.billLookup(function(err, bill) {
     console.log(json);
   });
 });
+*/

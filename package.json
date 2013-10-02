@@ -11,7 +11,10 @@
     "request": "2.25.x",
     "async": "0.2.x",
     "sunlight-congress-api": "x",
-    "openstates": "0.0.1"
+    "openstates": "0.0.1",
+    "express": "3.2.0",
+    "jade": "*",
+    "hbs": "2.1.0"
   },
   "devDependencies": {
     "nconf": "~0.6.7"
